@@ -1,9 +1,9 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-13
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-13
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-15
 
 
-from re import IGNORECASE, search
+from re import IGNORECASE, search, sub
 
 
 def two_token_match(pattern, text):
@@ -18,7 +18,8 @@ def two_token_match(pattern, text):
     tokens = pattern.split()
     count = 0  # Counter of matched tokens
     for token in tokens:
-        if search(f'\\b{token}\\b', text, IGNORECASE) is not None:
+        token = sub(r"[^A-Za-z]", '', token, count=len(token))
+        if len(token) > 1 and search(f"\\b{token}\\b", text, IGNORECASE) is not None:
             count += 1
             if count == 2:
                 return True

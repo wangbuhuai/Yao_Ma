@@ -1,6 +1,6 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-13
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-13
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-15
 
 
 from Google_Trends.Search import SearchEngine

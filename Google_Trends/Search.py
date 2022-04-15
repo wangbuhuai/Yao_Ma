@@ -1,6 +1,6 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-13
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-13
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-15
 
 
 from Google_Trends.Settings import PARAMETERS, SUGGESTIONS
@@ -24,6 +24,7 @@ class SearchEngine:
         self.term = []  # Search term
         self.url = None  # Url taken from the suggestions in Google Trends
         self.remote_suggestion = None  # Suggestion text taken from the suggestions in Google Trends
+        self.counter = 1  # Aligned with Excel rows
 
     # Methods
 
@@ -45,6 +46,8 @@ class SearchEngine:
             :return: search result
             :rtype: Pandas DataFrame
         """
+        self.counter += 1
+
         # Initialize a search engine.
         engine = TrendReq(
             hl=self.hl,
@@ -81,8 +84,15 @@ class SearchEngine:
         # Insert a column containing the search term.
         results.insert(
             loc=0,
-            column="Name",
-            value=f"{self.term[0]}\n({self.remote_suggestion})"
+            column="Google Trends Search Term",
+            value=f"{self.term[0]}"
+        )
+
+        # Insert a column containing the Google Trends suggestion.
+        results.insert(
+            loc=1,
+            column="Google Trends Suggestion",
+            value=f"{self.remote_suggestion}"
         )
 
         # Change the date format to yyyy-mm.
@@ -97,5 +107,7 @@ class SearchEngine:
             columns={results.keys()[-1]: "SVI Index"},
             inplace=True
         )
+
+        print(f"({self.counter}) {self.term} SVI data collected!")
 
         return results
