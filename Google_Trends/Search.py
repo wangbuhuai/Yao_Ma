@@ -55,6 +55,9 @@ class SearchEngine:
             :return: search result
             :rtype: Pandas DataFrame
         """
+        self._url = None
+        self._remote_suggestion = None
+        self._remote_suggestion_term = None
         self._reliable = False
 
         # Initialize a search engine.

@@ -10,8 +10,8 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 
 
-LOW = 256
-HIGH = 401
+LOW = 4628
+HIGH = 20001
 
 
 def main():
@@ -53,7 +53,7 @@ def main():
             result[0].to_csv(
                 (path + filename + " - " + extension.upper() + '.' + extension).replace(' ', '_'),
                 errors="ignore",
-                index=False
+                index=True
             )
 
             print("File \"" + filename + " - " + extension.upper() + '.' + extension + "\" Created!")
