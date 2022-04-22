@@ -4,7 +4,7 @@
 
 
 from Google_Trends.Settings import SUGGESTIONS
-from Google_Trends.Two_Token_Match import two_token_match
+from Google_Trends.Two_Token_Match import one_token_match, two_token_match
 from pytrends.request import TrendReq
 
 
@@ -25,6 +25,12 @@ def match_suggestions(engine, term):
         if two_token_match(term, remote_suggestion["title"]):
             # Condition 2: suggestion must match.
             for local_suggestion in SUGGESTIONS:
+                if len(local_suggestion.split()) == 1 and one_token_match(local_suggestion, remote_suggestion["type"]):
+                    return {
+                        "suggestion": remote_suggestion["type"],
+                        "term": remote_suggestion["title"],
+                        "url": remote_suggestion["mid"]
+                    }
                 if two_token_match(local_suggestion, remote_suggestion["type"]):
                     return {
                         "suggestion": remote_suggestion["type"],

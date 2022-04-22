@@ -1,11 +1,12 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-13
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-15
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-21
 
 
 from Google_Trends.Settings import PARAMETERS, SUGGESTIONS
 from Google_Trends.Suggestion import match_suggestions
 from pytrends.request import TrendReq
+from re import sub
 
 
 # A Google Trends search engine
@@ -15,18 +16,26 @@ class SearchEngine:
         """ Initializes a Google Trends search engine
             :return: None
         """
-        self.start = PARAMETERS["Start_Date"]  # Start date of the search period
-        self.end = PARAMETERS["End_Date"]  # End date of the search period
-        self.hl = "en-US"  # Language
-        self.tz = 360  # Timezone offset
-        self.geo = "US"  # Geographic location
-        self.suggestions = SUGGESTIONS is not None and len(SUGGESTIONS) != 0  # Whether to turn on suggestions
-        self.term = []  # Search term
-        self.url = None  # Url taken from the suggestions in Google Trends
-        self.remote_suggestion = None  # Suggestion text taken from the suggestions in Google Trends
-        self.counter = 1  # Aligned with Excel rows
+        self._start = PARAMETERS["Start_Date"]  # Start date of the search period
+        self._end = PARAMETERS["End_Date"]  # End date of the search period
+        self._hl = "en-US"  # Language
+        self._tz = 360  # Timezone offset
+        self._geo = "US"  # Geographic location
+        self._suggestions = SUGGESTIONS is not None and len(SUGGESTIONS) != 0  # Whether to turn on suggestions
+        self._term = []  # Search term
+        self._url = None  # Url taken from the suggestions in Google Trends
+        self._remote_suggestion = None  # Suggestion text taken from the suggestions in Google Trends
+        self._remote_suggestion_term = None  # Search term under the matched suggestion in Google Trends
+        self._reliable = False  # Indicates whether there is a suggestion match in Google Trends
 
     # Methods
+
+    def get_term(self):
+        """ Returns the search term
+            :return: search term
+            :rtype: str
+        """
+        return sub(r"[^A-Za-z ]", '', self._term[0])
 
     def set_term(self, term):
         """ Updates the search term
@@ -35,44 +44,44 @@ class SearchEngine:
             :return: None
         """
         # Clear the current search terms.
-        while len(self.term) > 0:
-            self.term.pop()
+        while len(self._term) > 0:
+            self._term.pop()
 
         # Add the updated search term.
-        self.term.append(term)
+        self._term.append(term)
 
     def search(self):
         """ Search the term in Google Trends
             :return: search result
             :rtype: Pandas DataFrame
         """
-        self.counter += 1
+        self._reliable = False
 
         # Initialize a search engine.
-        engine = TrendReq(
-            hl=self.hl,
-            tz=self.tz,
-        )
+        engine = TrendReq(hl=self._hl, tz=self._tz)
 
         # Turn on suggestions if it is set.
-        if self.suggestions:
-            suggestions = match_suggestions(engine, self.term[0])
+        if self._suggestions:
+            suggestions = match_suggestions(engine, self._term[0])
 
-            if suggestions is None:
-                return
-
-            self.set_term(suggestions["term"])
-            self.url = suggestions["url"]
-            self.remote_suggestion = suggestions["suggestion"]
+            if suggestions is not None:
+                self._remote_suggestion_term = suggestions["term"]
+                self._url = suggestions["url"]
+                self._remote_suggestion = suggestions["suggestion"]
+                self._reliable = True
 
         engine.build_payload(
-            kw_list=[self.url] if self.url is not None else self.term,
-            timeframe=self.start + ' ' + self.end,
-            geo=self.geo
+            kw_list=[self._url] if self._url is not None else self._term,
+            timeframe=self._start + ' ' + self._end,
+            geo=self._geo
         )
 
         # Generate the search results.
         results = engine.interest_over_time()
+
+        # If no SVI data is found, then return.
+        if results.empty:
+            return
 
         # Drop the data with little interest.
         results.drop(
@@ -84,15 +93,22 @@ class SearchEngine:
         # Insert a column containing the search term.
         results.insert(
             loc=0,
+            column="Owner",
+            value=f"{self._term[0]}"
+        )
+
+        # Insert a column containing the Google Trends search term.
+        results.insert(
+            loc=1,
             column="Google Trends Search Term",
-            value=f"{self.term[0]}"
+            value=f"{self._remote_suggestion_term}" if self._remote_suggestion_term is not None else "N/A"
         )
 
         # Insert a column containing the Google Trends suggestion.
         results.insert(
             loc=1,
             column="Google Trends Suggestion",
-            value=f"{self.remote_suggestion}"
+            value=f"{self._remote_suggestion}" if self._remote_suggestion is not None else "N/A"
         )
 
         # Change the date format to yyyy-mm.
@@ -108,6 +124,4 @@ class SearchEngine:
             inplace=True
         )
 
-        print(f"({self.counter}) {self.term} SVI data collected!")
-
-        return results
+        return [results, self._reliable]

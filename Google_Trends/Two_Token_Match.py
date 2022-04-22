@@ -24,3 +24,13 @@ def two_token_match(pattern, text):
             if count == 2:
                 return True
     return False
+
+
+def one_token_match(pattern, text):
+    """ Checks whether the pattern appears entirely as a token in the text
+        :param pattern: pattern to check
+        :param text: text to search
+        :return: {True} if the pattern appears entirely as a token in the text; {False} otherwise
+    """
+    pattern = sub(r"[^A-Za-z]", '', pattern, count=len(pattern))
+    return len(pattern) > 1 and search(f"\\b{pattern}\\b", text, IGNORECASE) is not None
