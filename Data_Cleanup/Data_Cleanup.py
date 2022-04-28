@@ -1,26 +1,17 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-24
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-24
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-26
 
 
 from Database.Record import Record
 from collections import deque
-from tkinter import Tk
 from pandas import read_excel
-from tkinter.filedialog import askopenfilename
 
 
 def main():
-    # Ask the user to select the input Excel database.
-    Tk().withdraw()
-    input_file = askopenfilename(
-        title="Select the Excel spreadsheet:",
-        filetypes=[("Excel Spreadsheet", ".xlsx .xls .xlsm")]
-    )
-
     # Open the input Excel database.
     input_file = read_excel(
-        io=input_file,
+        io=r"../Raw_Input_File/final_ceo_list.xlsx",
         sheet_name="search"
     )
 

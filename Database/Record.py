@@ -1,9 +1,10 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-24
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-24
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-26
 
 
-from re import ASCII, IGNORECASE, search, sub
+from Algorithms.Strings import english_only, reshape
+from re import IGNORECASE, search
 
 
 # Suffix of companies
@@ -38,17 +39,17 @@ class Record:
         """
         # Data fields
         self._record_number = record_number
-        self._owner = sub(r"\s+?", ' ', sub(r"[.,]", '', owner.strip()))
+        self._owner = reshape(owner)
         self._ticker = '-' if str(ticker).strip() == "nan" else ticker.strip()
         self._cusip6 = '-' if str(cusip6).strip() == "nan" else cusip6.strip()
-        self._cname = sub(r"\s+?", ' ', sub(r"[.,]", '', cname.strip()))
+        self._cname = reshape(cname)
 
     # Getters
 
     def get_record_number(self):
         """ Returns the number of the record
             :return: number of the record
-            :rtype: str
+            :rtype: int
         """
         return self._record_number
 
@@ -145,7 +146,7 @@ class Record:
             return False
 
         # If the owner string contains non-English letter, then it fails the test.
-        if search(r"[^\w\s\-.\']", self.get_owner(), ASCII) is not None:
+        if not english_only(self.get_owner()):
             return False
 
         # If the owner is a company rather than a person, then it fails the test.

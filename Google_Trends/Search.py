@@ -1,12 +1,13 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-13
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-21
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-26
 
 
-from Google_Trends.Settings import PARAMETERS, SUGGESTIONS
-from Google_Trends.Suggestion import match_suggestions
+from Algorithms.Data_Frame import svi_reshape
+from Database.Record import Record
+from Google_Trends.Suggestions import match_suggestions
+from Google_Trends.URLs import Url, url_check
 from pytrends.request import TrendReq
-from re import sub
 
 
 # A Google Trends search engine
@@ -16,115 +17,71 @@ class SearchEngine:
         """ Initializes a Google Trends search engine
             :return: None
         """
-        self._start = PARAMETERS["Start_Date"]  # Start date of the search period
-        self._end = PARAMETERS["End_Date"]  # End date of the search period
-        self._hl = "en-US"  # Language
-        self._tz = 360  # Timezone offset
-        self._geo = "US"  # Geographic location
-        self._suggestions = SUGGESTIONS is not None and len(SUGGESTIONS) != 0  # Whether to turn on suggestions
-        self._term = []  # Search term
-        self._url = None  # Url taken from the suggestions in Google Trends
-        self._remote_suggestion = None  # Suggestion text taken from the suggestions in Google Trends
-        self._remote_suggestion_term = None  # Search term under the matched suggestion in Google Trends
-        self._reliable = False  # Indicates whether there is a suggestion match in Google Trends
+        # Data fields
+        self._engine = TrendReq(
+            hl="en-US",  # Language
+            tz=360  # Timezone offset
+        )  # A Google Trends search engine
 
     # Methods
 
-    def get_term(self):
-        """ Returns the search term
-            :return: search term
-            :rtype: str
+    def search_owner(self, record, urls):
+        """ Searches the owner of the organization in a record on Google Trends
+            :param record: a record in the input CSV database
+            :type record: Record
+            :param urls: a list containing the urls processed
+            :type urls: list[Url]
+            :return: a dictionary containing the search result and whether the result is reliable
+            :rtype: dict
         """
-        return sub(r"[^A-Za-z ]", '', self._term[0])
+        # Define some entities for later use.
+        remote_suggestion_term = None  # Stores the term for the matched remote suggestion
+        remote_suggestion = None  # Stores the matched remote suggestion
+        url = None  # Stores the url if suggestion found
+        output_directory = r"../Google_Trends_Data_Collection/Output_Files/"  # Directory to store the output file
+        category = "Unreliable"  # Stores the category of the record
 
-    def set_term(self, term):
-        """ Updates the search term
-            :param term: updated term to search
-            :type term: str
-            :return: None
-        """
-        # Clear the current search terms.
-        while len(self._term) > 0:
-            self._term.pop()
+        # Try to match suggestions on Google Trends.
+        suggestions = match_suggestions(self._engine, record.get_owner(), "Owner")
+        if suggestions is not None:
+            remote_suggestion_term = suggestions["term"]
+            remote_suggestion = suggestions["suggestion"]
+            url = suggestions["url"]
 
-        # Add the updated search term.
-        self._term.append(term)
+            # Check whether the url has been processed earlier.
+            if url_check(url, record.get_record_number(), urls):
+                output_directory += r"Need_Manual_Check/"
+                category = "Manual Check"
+            else:
+                output_directory += "Reliable/"
+                category = "Reliable"
 
-    def search(self):
-        """ Search the term in Google Trends
-            :return: search result
-            :rtype: Pandas DataFrame
-        """
-        self._url = None
-        self._remote_suggestion = None
-        self._remote_suggestion_term = None
-        self._reliable = False
+        if url is None:
+            output_directory += "Unreliable/"
 
-        # Initialize a search engine.
-        engine = TrendReq(hl=self._hl, tz=self._tz)
-
-        # Turn on suggestions if it is set.
-        if self._suggestions:
-            suggestions = match_suggestions(engine, self._term[0])
-
-            if suggestions is not None:
-                self._remote_suggestion_term = suggestions["term"]
-                self._url = suggestions["url"]
-                self._remote_suggestion = suggestions["suggestion"]
-                self._reliable = True
-
-        engine.build_payload(
-            kw_list=[self._url] if self._url is not None else self._term,
-            timeframe=self._start + ' ' + self._end,
-            geo=self._geo
+        self._engine.build_payload(
+            kw_list=[url] if url is not None else [record.get_owner()],
+            timeframe="2004-01-01" + ' ' + "2021-01-31",  # Search time period
+            geo="US"  # Search geographic location
         )
 
-        # Generate the search results.
-        results = engine.interest_over_time()
+        results = self._engine.interest_over_time()  # Generate search results.
 
         # If no SVI data is found, then return.
         if results.empty:
             return
 
-        # Drop the data with little interest.
-        results.drop(
-            labels="isPartial",
-            axis="columns",
-            inplace=True
-        )
+        # Add the output file header.
+        output_data = f"Owner:,{record.get_owner()}\n" \
+                      f"Cname:,{record.get_cname()}\n" \
+                      f"Google Trends Search Term:,{remote_suggestion_term}\n" \
+                      f"Google Trends Suggestion:,{remote_suggestion}\n" \
+                      f"Category:,{category}\n\n"
 
-        # Insert a column containing the search term.
-        results.insert(
-            loc=0,
-            column="Owner",
-            value=f"{self._term[0]}"
-        )
+        # Reshape the SVI data.
+        output_data += svi_reshape(results)
 
-        # Insert a column containing the Google Trends search term.
-        results.insert(
-            loc=1,
-            column="Google Trends Search Term",
-            value=f"{self._remote_suggestion_term}" if self._remote_suggestion_term is not None else "N/A"
-        )
-
-        # Insert a column containing the Google Trends suggestion.
-        results.insert(
-            loc=1,
-            column="Google Trends Suggestion",
-            value=f"{self._remote_suggestion}" if self._remote_suggestion is not None else "N/A"
-        )
-
-        # Change the date format to yyyy-mm.
-        results.rename(
-            lambda date: "%d-%02d" % (date.year, date.month),
-            axis=0,
-            inplace=True
-        )
-
-        # Change the last column's name to "SVI Index".
-        results.rename(
-            columns={results.keys()[-1]: "SVI Index"},
-            inplace=True
-        )
-
-        return [results, self._reliable]
+        return {
+            "dir": output_directory,
+            "data": output_data
+        }

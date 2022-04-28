@@ -5,7 +5,7 @@
 
 from Google_Trends.Search import SearchEngine
 from Google_Trends.Search_Term import Record
-from Google_Trends.Suggestion import match_suggestions
+from Google_Trends.Suggestions import match_suggestions
 from Input.Settings import INPUT_FILE
 from pandas import DataFrame, read_excel
 from tkinter import Tk
