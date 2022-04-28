@@ -1,9 +1,9 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-13
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-26
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-28
 
 
-from Algorithms.Strings import one_token_match, two_token_match
+from Algorithms.Strings import one_token_match, reshape, two_token_match
 from pytrends.request import TrendReq
 
 
@@ -53,13 +53,13 @@ def match_suggestions(engine, term, field):
             for local_suggestion in (OWNER_SUGGESTIONS if field == "Owner" else CNAME_SUGGESTIONS):
                 if local_suggestion.find(' ') == -1 and one_token_match(local_suggestion, remote_suggestion["type"]):
                     return {
-                        "suggestion": remote_suggestion["type"],
-                        "term": remote_suggestion["title"],
+                        "suggestion": reshape(remote_suggestion["type"]),
+                        "term": reshape(remote_suggestion["title"]),
                         "url": remote_suggestion["mid"]
                     }
                 if local_suggestion.find(' ') != -1 and two_token_match(local_suggestion, remote_suggestion["type"]):
                     return {
-                        "suggestion": remote_suggestion["type"],
-                        "term": remote_suggestion["title"],
+                        "suggestion": reshape(remote_suggestion["type"]),
+                        "term": reshape(remote_suggestion["title"]),
                         "url": remote_suggestion["mid"]
                     }

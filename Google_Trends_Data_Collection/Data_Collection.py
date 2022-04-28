@@ -1,16 +1,14 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-26
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-26
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-28
 
 
 from Database.Record import Record
 from Google_Trends.Search import SearchEngine
 from Google_Trends.URLs import Url
 from csv import reader
-
-
-START = 19053
-END = None
+from pytrends.exceptions import ResponseError
+from termcolor import colored
 
 
 def main():
@@ -24,26 +22,53 @@ def main():
     csv = reader(input_file)
     csv = list(csv)
 
-    # Open the file storing the processed urls.
-    url_file = open(
-        file=r"../Google_Trends/Intermediate_File/Processed_URLs.txt",
+    # Open the files storing the processed urls.
+    owner_urls_file = open(
+        file=r"../Google_Trends/Intermediate_File/Owner_URLs.txt",
+        mode='r',
+        errors="ignore"
+    )
+    cname_urls_file = open(
+        file=r"../Google_Trends/Intermediate_File/Cname_URLs.txt",
         mode='r',
         errors="ignore"
     )
 
+    # Open the file containing the starting index.
+    start_file = open(
+        file=r"../Google_Trends/Intermediate_File/Start.txt",
+        mode='r',
+        errors="ignore"
+    )
+    start = int(start_file.read())
+    start_file.close()
+
     # Load the urls to a list.
-    urls = []
-    lines = url_file.readlines()
-    for row in lines:
+    owner_urls = []
+    lines_1 = owner_urls_file.readlines()
+    for row in lines_1:
         if row.strip() == '':
             continue
         row = [row[:row.find(',')], row[row.find(',') + 1:]]
         url = Url(row[0])
         for num in row[1].split():
             url.push(int(num))
-        urls.append(url)
+        owner_urls.append(url)
+    owner_urls_file.close()
 
-    for i in range((1 if START is None else START), (len(csv) if END is None else END)):
+    cname_urls = []
+    lines_2 = cname_urls_file.readlines()
+    for row in lines_2:
+        if row.strip() == '':
+            continue
+        row = [row[:row.find(',')], row[row.find(',') + 1:]]
+        url = Url(row[0])
+        for num in row[1].split():
+            url.push(int(num))
+        cname_urls.append(url)
+    cname_urls_file.close()
+
+    for i in range(start, len(csv)):
         record = Record(
             record_number=int(csv[i][0]),
             owner=csv[i][1],
@@ -55,50 +80,62 @@ def main():
         engine = SearchEngine()
 
         try:
-            result = engine.search_owner(record, urls)
+            result_owner = engine.search_owner(record, owner_urls)
+            result_cname = engine.search_cname(record, cname_urls)
 
-            if result is not None:
+            if result_owner is not None:
                 output_file = open(
-                    file=result["dir"] + ("%05d_-_Owner_-_SVI_Data_-_CSV.csv" % record.get_record_number()),
+                    file=result_owner["dir"] + ("%05d_-_Owner_-_SVI_Data_-_CSV.csv" % record.get_record_number()),
                     mode='w',
                     errors="ignore"
                 )
-                output_file.write(result["data"])
+                output_file.write(result_owner["data"])
                 output_file.close()
 
-                print(f"{record} Collected!")
-        except:
-            # Close the input files.
-            input_file.close()
-            url_file.close()
+                print(colored(f"Owner of {record} Collected!", "blue"))
 
-            # Update the url_file
-            url_file = open(
-                file=r"../Google_Trends/Intermediate_File/Processed_URLs.txt",
+            if result_cname is not None:
+                output_file = open(
+                    file=result_cname["dir"] + ("%05d_-_Cname_-_SVI_Data_-_CSV.csv" % record.get_record_number()),
+                    mode='w',
+                    errors="ignore"
+                )
+                output_file.write(result_cname["data"])
+                output_file.close()
+
+                print(colored(f"Cname of {record} Collected!", "magenta"))
+        except ResponseError:
+            # Close the input file.
+            input_file.close()
+
+            # Update the url files.
+            owner_urls_file = open(
+                file=r"../Google_Trends/Intermediate_File/Owner_URLs.txt",
                 mode='w',
                 errors="ignore"
             )
-            for url in urls:
-                url_file.write("%s\n" % url)
+            for url in owner_urls:
+                owner_urls_file.write("%s\n" % url)
+            owner_urls_file.close()
 
-            url_file.close()
+            cname_urls_file = open(
+                file=r"../Google_Trends/Intermediate_File/Cname_URLs.txt",
+                mode='w',
+                errors="ignore"
+            )
+            for url in cname_urls:
+                cname_urls_file.write("%s\n" % url)
+            cname_urls_file.close()
+
+            # Update the start file.
+            start_file = open(
+                file=r"../Google_Trends/Intermediate_File/Start.txt",
+                mode='w',
+                errors="ignore"
+            )
+            start_file.write(str(i))
+            start_file.close()
             return
-
-    # Close the input files.
-    input_file.close()
-    url_file.close()
-
-    # Update the url_file
-    url_file = open(
-        file=r"../Google_Trends/Intermediate_File/Processed_URLs.txt",
-        mode='w',
-        errors="ignore"
-    )
-
-    for url in urls:
-        url_file.write("%s\n" % url)
-
-    url_file.close()
 
 
 if __name__ == "__main__":

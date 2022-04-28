@@ -1,7 +1,6 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-26
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-26
-
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-28
 
 from Algorithms.Files import move_to_manual_check
 
@@ -54,7 +53,7 @@ class Url:
         return result
 
 
-def url_check(url, record_number, urls):
+def url_check(url, record_number, urls, field):
     """ Checks whether the url has been processed earlier
         :param url: URL to check
         :type url: str
@@ -62,6 +61,8 @@ def url_check(url, record_number, urls):
         :type record_number: int
         :param urls: a list containing the urls processed
         :type urls: list[Url]
+        :param field: either "Owner" or "Cname"
+        :type field: str
         :return: {True} if the url has been processed earlier; {False} otherwise
         :rtype: bool
     """
@@ -71,7 +72,7 @@ def url_check(url, record_number, urls):
                 return False
             else:
                 # Move related files to "Need_Manual_Check" directory.
-                move_to_manual_check(urls[i])
+                move_to_manual_check(urls[i], field)
 
                 urls[i].push(record_number)
                 return True
