@@ -1,6 +1,6 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-26
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-28
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-30
 
 
 from Database.Record import Record
@@ -22,17 +22,22 @@ def main():
     csv = reader(input_file)
     csv = list(csv)
 
-    # Open the files storing the processed urls.
+    # Open the file storing the processed owner urls.
     owner_urls_file = open(
         file=r"../Google_Trends/Intermediate_File/Owner_URLs.txt",
         mode='r',
         errors="ignore"
     )
-    cname_urls_file = open(
-        file=r"../Google_Trends/Intermediate_File/Cname_URLs.txt",
+
+    # Open the file storing the common nicknames.
+    nicknames_file = open(
+        file=r"./Input_File/Nicknames.csv",
         mode='r',
+        newline='',
         errors="ignore"
     )
+    nicknames = reader(nicknames_file)
+    nicknames = [[name for name in row if len(name) > 1 and ',' not in name] for row in list(nicknames)]
 
     # Open the file containing the starting index.
     start_file = open(
@@ -45,6 +50,7 @@ def main():
 
     # Load the urls to a list.
     owner_urls = []
+
     lines_1 = owner_urls_file.readlines()
     for row in lines_1:
         if row.strip() == '':
@@ -56,19 +62,10 @@ def main():
         owner_urls.append(url)
     owner_urls_file.close()
 
-    cname_urls = []
-    lines_2 = cname_urls_file.readlines()
-    for row in lines_2:
-        if row.strip() == '':
-            continue
-        row = [row[:row.find(',')], row[row.find(',') + 1:]]
-        url = Url(row[0])
-        for num in row[1].split():
-            url.push(int(num))
-        cname_urls.append(url)
-    cname_urls_file.close()
+    # start = 200
+    end = len(csv)
 
-    for i in range(start, len(csv)):
+    for i in range(start, end):
         record = Record(
             record_number=int(csv[i][0]),
             owner=csv[i][1],
@@ -80,8 +77,7 @@ def main():
         engine = SearchEngine()
 
         try:
-            result_owner = engine.search_owner(record, owner_urls)
-            result_cname = engine.search_cname(record, cname_urls)
+            result_owner = engine.search_owner(record, owner_urls, nicknames)
 
             if result_owner is not None:
                 output_file = open(
@@ -92,22 +88,8 @@ def main():
                 output_file.write(result_owner["data"])
                 output_file.close()
 
-                print(colored(f"Owner of {record} Collected!", "blue"))
-
-            if result_cname is not None:
-                output_file = open(
-                    file=result_cname["dir"] + ("%05d_-_Cname_-_SVI_Data_-_CSV.csv" % record.get_record_number()),
-                    mode='w',
-                    errors="ignore"
-                )
-                output_file.write(result_cname["data"])
-                output_file.close()
-
-                print(colored(f"Cname of {record} Collected!", "magenta"))
+                print(colored(f"Owner of {record} Collected!", result_owner["color"]))
         except ResponseError:
-            # Close the input file.
-            input_file.close()
-
             # Update the url files.
             owner_urls_file = open(
                 file=r"../Google_Trends/Intermediate_File/Owner_URLs.txt",
@@ -118,15 +100,6 @@ def main():
                 owner_urls_file.write("%s\n" % url)
             owner_urls_file.close()
 
-            cname_urls_file = open(
-                file=r"../Google_Trends/Intermediate_File/Cname_URLs.txt",
-                mode='w',
-                errors="ignore"
-            )
-            for url in cname_urls:
-                cname_urls_file.write("%s\n" % url)
-            cname_urls_file.close()
-
             # Update the start file.
             start_file = open(
                 file=r"../Google_Trends/Intermediate_File/Start.txt",
@@ -135,7 +108,11 @@ def main():
             )
             start_file.write(str(i))
             start_file.close()
-            return
+            break
+
+    # Close the input file.
+    input_file.close()
+    nicknames_file.close()
 
 
 if __name__ == "__main__":

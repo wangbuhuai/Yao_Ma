@@ -1,9 +1,9 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-13
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-28
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-30
 
 
-from Algorithms.Strings import one_token_match, reshape, two_token_match
+from Algorithms.Strings import name_match, one_token_match, reshape, two_token_match
 from pytrends.request import TrendReq
 
 
@@ -32,14 +32,14 @@ CNAME_SUGGESTIONS = (
 )
 
 
-def match_suggestions(engine, term, field):
+def match_name_suggestions(engine, term, nicknames):
     """ Matches a term with Google Trends suggestions
         :param engine: a Google Trends search engine
         :type engine: TrendReq
         :param term: local search term
         :type term: str
-        :param field: "Owner" or "Cname"
-        :type field: str
+        :param nicknames: a dictionary of common nicknames
+        :type nicknames: list
         :return: a dictionary containing the matched term and suggestion, or None if no matched suggestion found
         :rtype: dict
     """
@@ -48,9 +48,9 @@ def match_suggestions(engine, term, field):
 
     for remote_suggestion in remote_suggestions:
         # Condition 1: search term must match.
-        if two_token_match(term, remote_suggestion["title"]):
+        if name_match(term, remote_suggestion["title"], nicknames):
             # Condition 2: suggestion must match.
-            for local_suggestion in (OWNER_SUGGESTIONS if field == "Owner" else CNAME_SUGGESTIONS):
+            for local_suggestion in OWNER_SUGGESTIONS:
                 if local_suggestion.find(' ') == -1 and one_token_match(local_suggestion, remote_suggestion["type"]):
                     return {
                         "suggestion": reshape(remote_suggestion["type"]),

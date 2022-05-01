@@ -1,6 +1,6 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-26
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-26
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-30
 
 
 from re import ASCII, IGNORECASE, search, sub
@@ -41,14 +41,22 @@ def reshape(s):
     return s.strip()
 
 
-def remove_parentheses(s):
-    """ Remove '(' and ')' characters from a string
-        :param s: original string
-        :type s: str
-        :return: a copy of the original string with parentheses removed
-        :rtype: str
+def prepare(s):
+    """ Formats a string for matching
+        :param s: a string to format
+        :return: formatted string
     """
-    return sub(r"[()]", '', s, count=len(s))
+    # Remove any token that has only one character.
+    s = sub(r"\b\w\b", '', s, count=len(s))
+
+    # Remove any parentheses from the string.
+    s = sub(r"[()]", '', s, count=len(s))
+
+    # Replace any whitespace (or combination of whitespaces) with a single space.
+    s = sub(r"\s+?", ' ', s, count=len(s))
+
+    # Return a trimmed string.
+    return s.strip()
 
 
 def two_token_match(local, remote):
@@ -60,8 +68,8 @@ def two_token_match(local, remote):
         :return: {True} if there are at least two common tokens in the two strings; {False} otherwise
         :rtype: bool
     """
-    local = (remove_parentheses(token) for token in local.split())  # Split the local string into tokens.
-    remote = remove_parentheses(reshape(remote))  # Format the remote string.
+    local = [token for token in prepare(local).split()]  # Split the local string into tokens.
+    remote = prepare(reshape(remote))  # Format the remote string.
     count = 0  # Stores the number of matched tokens found
 
     for token in local:
@@ -83,7 +91,37 @@ def one_token_match(local, remote):
         :rtype: bool
     """
     # Format the local and remote strings.
-    local = remove_parentheses(local)
-    remote = remove_parentheses(reshape(remote))
+    local = prepare(local)
+    remote = prepare(reshape(remote))
 
     return search(fr"\b{local}\b", remote, IGNORECASE) is not None
+
+
+def name_match(local, remote, nicknames):
+    """ Tests whether a name (local) matches another name (remote).
+        :param local: a string of a full name in which the first token must be the last name
+        :type local: str
+        :param remote: a string of a full name
+        :type remote: str
+        :param nicknames: a dictionary of common nicknames
+        :type nicknames: list
+        :return: {True} if the two names match; {False} otherwise
+        :rtype: bool
+    """
+    local = [token for token in prepare(local).split()]  # Split the local string into tokens.
+    remote = prepare(reshape(remote))
+
+    # Condition 1: last names must match.
+    if search(fr"\b{local[0]}\b", remote, IGNORECASE) is not None:
+        for i in range(1, len(local)):
+            if search(fr"\b{local[i]}\b", remote, IGNORECASE) is not None:
+                return True
+            for row in nicknames:
+                # Tests whether the token is in this row.
+                for name in row:
+                    if local[i].lower() == name.lower():
+                        for token in row:
+                            if search(fr"\b{token}\b", remote, IGNORECASE) is not None:
+                                return True
+                        break
+    return False
