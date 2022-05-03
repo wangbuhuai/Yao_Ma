@@ -62,7 +62,7 @@ def main():
         owner_urls.append(url)
     owner_urls_file.close()
 
-    # start = 200
+    # start = 2871
     end = len(csv)
 
     for i in range(start, end):
