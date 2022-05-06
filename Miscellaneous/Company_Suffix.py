@@ -3,19 +3,15 @@
 # Last updated by Dayu Wang (dwang@stchas.edu) on 2022-05-05
 
 
-from csv import reader
+from pandas import read_excel
 
 
 def main():
     # Open the input file storing records.
-    input_file = open(
-        file=r"../Data_Cleanup/Output_File/Records.csv",
-        mode='r',
-        newline='',
-        errors="ignore"
+    input_file = read_excel(
+        io=r"../Output/Output_Files/Output_File_-_Owners_-_XLSX.xlsx",
+        sheet_name="Output_SVI_Index_of_CEOs"
     )
-    csv = reader(input_file)
-    csv = list(csv)
 
     # Open the output file.
     output_file = open(
@@ -27,15 +23,24 @@ def main():
     # Create a dictionary to store the suffix and frequency.
     freq = dict()
 
+    # Create a set to store processed cname.
+    cnames = set()
+
     # Read and process each cname in the input file.
-    for row in range(1, len(csv)):
-        cname = str(csv[row][4])
+    for _, row in input_file.iterrows():
+        cname = str(row["CNAME"])
+
+        if cname in cnames:
+            continue
+
         suffix = cname.split()[-1].upper().strip()
 
         if suffix in freq:
             freq[suffix] += 1
         else:
             freq[suffix] = 1
+
+        cnames.add(cname)
 
     # Sort the dictionary.
     freq = dict(sorted(freq.items(), key=lambda item: item[1], reverse=True))
@@ -44,8 +49,7 @@ def main():
     for key, value in freq.items():
         output_file.write(f"{key} {value}\n")
 
-    # Close the input and output file.
-    input_file.close()
+    # Close the output file.
     output_file.close()
 
 
