@@ -3,6 +3,7 @@
 # Last updated by Dayu Wang (dwang@stchas.edu) on 2022-05-05
 
 
+from Algorithms.Date import MONTHS
 from csv import reader
 from os import listdir
 from os.path import isfile, join
@@ -92,7 +93,7 @@ def main():
                 year = str(csv[row][0])
                 month = str(csv[row][1])
                 svi = str(csv[row][2])
-                date = fr"01{month.upper()}{year}"
+                date = fr"{MONTHS[month.lower()]}/1/{year}"
 
                 worksheet.write_row(
                     row=next_row,

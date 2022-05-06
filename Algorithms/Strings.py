@@ -1,6 +1,6 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-26
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-30
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-05-06
 
 
 from re import ASCII, IGNORECASE, search, sub
@@ -57,6 +57,16 @@ def prepare(s):
 
     # Return a trimmed string.
     return s.strip()
+
+
+def recover_apostrophe(s):
+    """ Recover apostrophe in a string
+        :param s: original string
+        :type s: str
+        :return: a string with apostrophe recovered
+        :rtype: str
+    """
+    return sub(r"\b(\w+) S\b", "\g<1>\'S", s, count=len(s), flags=IGNORECASE)
 
 
 def two_token_match(local, remote):
@@ -125,3 +135,36 @@ def name_match(local, remote, nicknames):
                                 return True
                         break
     return False
+
+
+def prepare_cname(cname):
+    """ Prepares the string of cname for Google Trends
+        :param cname: string of cname
+        :type cname: str
+        :return: prepared string
+        :rtype: str
+    """
+    # List the tokens to remove in the string.
+    remove_tokens = (
+        "INC",
+        "CORP",
+        "CO",
+        "NEW",
+        "LTD",
+        "DE",
+        "PLC",
+        "LP",
+        "HOLDINGS",
+        "LLC",
+        "COR",
+        "COM",
+        "THE"
+    )
+
+    for token in remove_tokens:
+        re_str = fr"\b{token}\b"
+        cname = sub(re_str, '', cname.replace('.', ''), count=len(cname), flags=IGNORECASE)
+
+    cname = recover_apostrophe(cname)
+
+    return reshape(cname)
