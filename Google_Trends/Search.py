@@ -1,6 +1,6 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-04-13
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-04-30
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-05-23
 
 
 from Algorithms.Data_Frame import svi_reshape
@@ -8,6 +8,7 @@ from Database.Record import Record
 from Google_Trends.Suggestions import match_name_suggestions
 from Google_Trends.URLs import Url, url_check
 from pytrends.request import TrendReq
+from typing import Union
 
 
 # A Google Trends search engine
@@ -92,3 +93,39 @@ class SearchEngine:
             "data": output_data,
             "color": color
         }
+
+    def search_cname(self, url: str) -> Union[str, None]:
+        """ Searches the name of an organization on Google Trends
+            :param url: Google Trends search url
+            :return: Google Trends search results
+        """
+        self._engine.build_payload(
+            kw_list=[url],
+            timeframe="2004-01-01" + ' ' + "2022-03-31",  # Search time period
+            geo="US"  # Search geographic location
+        )
+
+        results = self._engine.interest_over_time()  # Generate search results.
+
+        # If no SVI data is found, then return.
+        if results.empty:
+            return
+
+        return svi_reshape(results)
+
+    def get_cname_url(self, term: str, suggestion: str) -> Union[str, None]:
+        """ Finds the Google Trends URL by a search term and a suggestion
+            :param term: Google Trends search term
+            :param suggestion: Google Trends suggestion to match
+            :return: Google Trends search URL
+        """
+        suggestions = self._engine.suggestions(term)
+        for remote_suggestion in suggestions:
+            if suggestion == str(remote_suggestion["type"]).lower().strip():
+                if term == str(remote_suggestion["title"]).lower().strip():
+                    return str(remote_suggestion["mid"]).lower().strip()
+                # 475, 606
+                if term.lower().replace("inc", '').strip() == str(remote_suggestion["title"]).lower().strip():
+                    return str(remote_suggestion["mid"]).lower().strip()
+
+        return None
