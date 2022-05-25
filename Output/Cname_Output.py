@@ -1,6 +1,6 @@
 # Created by Dayu Wang (dwang@stchas.edu) on 2022-05-23
 
-# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-05-23
+# Last updated by Dayu Wang (dwang@stchas.edu) on 2022-05-25
 
 
 from Algorithms.Date import MONTHS
@@ -15,7 +15,7 @@ from xlsxwriter import Workbook
 def main():
     # Open the original input file.
     raw_input_file = read_excel(
-        io=r"../Raw_Input_File/Cname_Results_-_XLSX.xlsx"
+        io=r"./Output_Files/Output_File_-_Owners_-_XLSX.xlsx"
     )
     raw_records = raw_input_file.values.tolist()
 
@@ -51,7 +51,7 @@ def main():
     worksheet.write_row(
         row=0,
         col=0,
-        data=["RECORD_NUMBER", "DATE", "ORIGINAL_CNAME", "SVI_INDEX"],
+        data=["RECORD_NUMBER", "DATE", "ORIGINAL_CNAME", "TICKER", "CUSIP6", "SVI_INDEX"],
         cell_format=cell_format_header
     )
 
@@ -66,9 +66,6 @@ def main():
             # Get the record number.
             record_num = int(filename[:3])
 
-            # Get the cname from original input file.
-            raw_cname = raw_records[record_num - 2][0]
-
             # Open the csv file.
             csv_file = open(
                 file=file,
@@ -78,6 +75,17 @@ def main():
             )
             csv = reader(csv_file)
             csv = list(csv)
+
+            # Get the cname.
+            raw_cname = str(csv[0][1]).strip()
+
+            # Search for ticker and cusip6 in raw input file.
+            ticker, cusip6 = '-', '-'
+            for record in raw_records:
+                if str(record[5]).lower().strip() == raw_cname.lower():
+                    ticker = str(record[3]).strip() if str(record[3]).strip().lower() != "nan" else '-'
+                    cusip6 = str(record[4]).strip() if str(record[4]).strip().lower() != "nan" else '-'
+                    break
 
             # Write the SVI data to the output file.
             for row in range(5, 224):
@@ -89,7 +97,7 @@ def main():
                 worksheet.write_row(
                     row=next_row,
                     col=0,
-                    data=[record_num, date, raw_cname, svi],
+                    data=[record_num, date, raw_cname, ticker, cusip6, svi],
                     cell_format=cell_format_data
                 )
                 next_row += 1
